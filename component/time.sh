@@ -29,6 +29,13 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# ─── Locale Setup ───
+echo -e "${YELLOW}[INFO] Setting up locale...${NC}"
+locale-gen en_US.UTF-8
+update-locale LANG=en_US.UTF-8
+echo -e "${GREEN}[OK] Locale set to en_US.UTF-8${NC}"
+echo ""
+
 # ─── Current Timezone ───
 echo -e "${YELLOW}[INFO] Current timezone:${NC}"
 timedatectl | grep "Time zone"

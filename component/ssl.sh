@@ -59,7 +59,7 @@ case "$SSL_CHOICE" in
         # ─── Self-Signed Certificate ───
         echo -e "${YELLOW}[INFO] Generating self-signed certificate...${NC}"
 
-        read -p "$(echo -e ${CYAN}Certificate validity in days [default: 365]:${NC} )" CERT_DAYS
+        read -p "$(echo -e ${CYAN}Certificate validity in days [default: 365 or 3652 to 10 Year]:${NC} )" CERT_DAYS
         CERT_DAYS="${CERT_DAYS:-365}"
 
         read -p "$(echo -e ${CYAN}Organization name [default: Terabyte Plus]:${NC} )" CERT_ORG
