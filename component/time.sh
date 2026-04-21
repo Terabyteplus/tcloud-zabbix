@@ -61,8 +61,16 @@ read -p "$(echo -e ${CYAN}Install NTP service? [Y/n]:${NC} )" INSTALL_NTP
 INSTALL_NTP="${INSTALL_NTP:-Y}"
 
 if [[ "$INSTALL_NTP" =~ ^[Yy]$ ]]; then
-    apt install ntp -y
-    echo -e "${GREEN}[OK] NTP installed successfully${NC}"
+    # Stop and disable systemd-timesyncd (conflicts with ntpsec/ntp)
+    echo -e "${YELLOW}[INFO] Disabling systemd-timesyncd (conflicts with NTP)...${NC}"
+    systemctl stop systemd-timesyncd 2>/dev/null || true
+    systemctl disable systemd-timesyncd 2>/dev/null || true
+    apt remove -y systemd-timesyncd 2>/dev/null || true
+    echo -e "${GREEN}[OK] systemd-timesyncd removed${NC}"
+
+    # Install ntpsec (replacement for ntp on Ubuntu 24.04)
+    apt install ntpsec -y
+    echo -e "${GREEN}[OK] NTPsec installed successfully${NC}"
 else
     echo -e "${YELLOW}[SKIP] NTP installation skipped${NC}"
     exit 0
