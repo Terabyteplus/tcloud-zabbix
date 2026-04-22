@@ -78,7 +78,8 @@ case "$SSL_CHOICE" in
         IP_INDEX=1
 
         while true; do
-            read -p "$(echo -e ${CYAN}Enter IP address #${IP_INDEX} [enter to finish]:${NC} )" CERT_IP
+            PROMPT="Enter IP address #${IP_INDEX} [enter to finish]: "
+            read -p "$PROMPT" CERT_IP
             if [ -z "$CERT_IP" ]; then
                 break
             fi
