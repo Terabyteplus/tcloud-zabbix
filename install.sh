@@ -65,6 +65,7 @@ show_menu() {
     echo -e "  ${CYAN}5)${NC}  Start/Manage Services"
     echo -e "  ${CYAN}6)${NC}  SSL/HTTPS Configuration"
     echo -e "  ${CYAN}7)${NC}  System Update (Security Patches)"
+    echo -e "  ${CYAN}8)${NC}  Fix Apache Path (Zabbix 7.2+)"
     echo ""
     echo -e "  ${CYAN}0)${NC}  Exit"
     echo ""
@@ -171,7 +172,8 @@ main() {
 
     while true; do
         show_menu
-        read -p "$(echo -e ${CYAN}  Select option:${NC} )" CHOICE
+        echo -ne "${CYAN}  Select option: ${NC}"
+        read CHOICE
         echo ""
 
         case "$CHOICE" in
@@ -196,6 +198,9 @@ main() {
             7)
                 system_update
                 ;;
+            8)
+                bash "$SCRIPT_DIR/component/fix-apache.sh"
+                ;;
             0)
                 echo -e "${GREEN}Goodbye! 👋${NC}"
                 exit 0
@@ -206,7 +211,8 @@ main() {
         esac
 
         echo ""
-        read -p "$(echo -e ${CYAN}Press Enter to return to menu...${NC})"
+        echo -ne "${CYAN}Press Enter to return to menu...${NC}"
+        read
         show_banner
     done
 }
