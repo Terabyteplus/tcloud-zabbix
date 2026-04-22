@@ -111,7 +111,10 @@ while true; do
 done
 echo ""
 
-read -p "$(echo -e ${CYAN}Enter MySQL root password [enter if none]:${NC} )" MYSQL_ROOT_PASSWORD
+if [ "$DB_TYPE" == "mysql" ]; then
+    read -sp "$(echo -e ${CYAN}Enter MySQL root password [enter if none]:${NC} )" MYSQL_ROOT_PASSWORD
+    echo ""
+fi
 echo ""
 
 # ─── Confirmation ───
@@ -160,21 +163,22 @@ EOF
     echo -e "${YELLOW}[STEP 2/4] Importing Zabbix schema...${NC}"
     echo -e "${CYAN}[INFO] This may take a few minutes...${NC}"
 
-    SQL_SCRIPT="/usr/share/zabbix/sql-scripts/mysql/server.sql.gz"
+    # Try newer path first (Zabbix 7.x), then fallback
+    SQL_SCRIPT="/usr/share/zabbix-sql-scripts/mysql/server.sql.gz"
+    if [ ! -f "$SQL_SCRIPT" ]; then
+        SQL_SCRIPT="/usr/share/zabbix/sql-scripts/mysql/server.sql.gz"
+    fi
+
     if [ -f "$SQL_SCRIPT" ]; then
+        echo -e "${CYAN}[INFO] Found SQL script: $SQL_SCRIPT${NC}"
         zcat "$SQL_SCRIPT" | mysql --default-character-set=utf8mb4 -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}"
         echo -e "${GREEN}[OK] Zabbix schema imported successfully${NC}"
     else
-        # Try alternative path for newer versions
-        SQL_SCRIPT="/usr/share/zabbix-sql-scripts/mysql/server.sql.gz"
-        if [ -f "$SQL_SCRIPT" ]; then
-            zcat "$SQL_SCRIPT" | mysql --default-character-set=utf8mb4 -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}"
-            echo -e "${GREEN}[OK] Zabbix schema imported successfully${NC}"
-        else
-            echo -e "${RED}[ERROR] Zabbix SQL script not found at expected paths${NC}"
-            echo -e "${YELLOW}[INFO] Please import schema manually:${NC}"
-            echo -e "${CYAN}  zcat /path/to/server.sql.gz | mysql -u${DB_USER} -p ${DB_NAME}${NC}"
-        fi
+        echo -e "${RED}[ERROR] Zabbix SQL script not found at expected paths:${NC}"
+        echo -e "${RED}  - /usr/share/zabbix-sql-scripts/mysql/server.sql.gz${NC}"
+        echo -e "${RED}  - /usr/share/zabbix/sql-scripts/mysql/server.sql.gz${NC}"
+        echo -e "${YELLOW}[INFO] Please import schema manually:${NC}"
+        echo -e "${CYAN}  zcat /path/to/server.sql.gz | mysql -u${DB_USER} -p ${DB_NAME}${NC}"
     fi
     echo ""
 
@@ -238,18 +242,19 @@ EOF
     echo ""
 
     echo -e "${YELLOW}[STEP 2/4] Importing Zabbix schema...${NC}"
-    SQL_SCRIPT="/usr/share/zabbix/sql-scripts/postgresql/server.sql.gz"
+    # Try newer path first (Zabbix 7.x), then fallback
+    SQL_SCRIPT="/usr/share/zabbix-sql-scripts/postgresql/server.sql.gz"
+    if [ ! -f "$SQL_SCRIPT" ]; then
+        SQL_SCRIPT="/usr/share/zabbix/sql-scripts/postgresql/server.sql.gz"
+    fi
+
     if [ -f "$SQL_SCRIPT" ]; then
+        echo -e "${CYAN}[INFO] Found SQL script: $SQL_SCRIPT${NC}"
         zcat "$SQL_SCRIPT" | sudo -u ${DB_USER} psql ${DB_NAME}
         echo -e "${GREEN}[OK] Zabbix schema imported successfully${NC}"
     else
-        SQL_SCRIPT="/usr/share/zabbix-sql-scripts/postgresql/server.sql.gz"
-        if [ -f "$SQL_SCRIPT" ]; then
-            zcat "$SQL_SCRIPT" | sudo -u ${DB_USER} psql ${DB_NAME}
-            echo -e "${GREEN}[OK] Zabbix schema imported successfully${NC}"
-        else
-            echo -e "${RED}[ERROR] Zabbix SQL script not found${NC}"
-        fi
+        echo -e "${RED}[ERROR] Zabbix SQL script not found${NC}"
+        echo -e "${YELLOW}[INFO] Please import schema manually${NC}"
     fi
     echo ""
 

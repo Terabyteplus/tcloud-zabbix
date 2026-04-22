@@ -69,7 +69,7 @@ if [[ "$INSTALL_NTP" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}[OK] systemd-timesyncd removed${NC}"
 
     # Install ntpsec (replacement for ntp on Ubuntu 24.04)
-    apt install ntpsec -y
+    apt install ntpsec ntpsec-ntpq -y
     echo -e "${GREEN}[OK] NTPsec installed successfully${NC}"
 else
     echo -e "${YELLOW}[SKIP] NTP installation skipped${NC}"
@@ -95,48 +95,103 @@ read -p "$(echo -e ${CYAN}Enter subnet mask [default: 255.255.255.0]:${NC} )" LA
 LAN_MASK="${LAN_MASK:-255.255.255.0}"
 echo ""
 
-# ─── Backup existing config ───
-if [ -f /etc/ntp.conf ]; then
-    cp /etc/ntp.conf /etc/ntp.conf.bak
-    echo -e "${GREEN}[OK] Backed up /etc/ntp.conf to /etc/ntp.conf.bak${NC}"
-elif [ -f /etc/ntpsec/ntp.conf ]; then
-    cp /etc/ntpsec/ntp.conf /etc/ntpsec/ntp.conf.bak
-    echo -e "${GREEN}[OK] Backed up /etc/ntpsec/ntp.conf to /etc/ntpsec/ntp.conf.bak${NC}"
-fi
-
-# ─── Generate NTP config ───
-NTP_CONF_DEST="/etc/ntp.conf"
+# ─── Detect NTP config path ───
 if [ -d /etc/ntpsec ]; then
     NTP_CONF_DEST="/etc/ntpsec/ntp.conf"
+    NTP_SERVICE="ntpsec"
+elif [ -f /etc/ntp.conf ]; then
+    NTP_CONF_DEST="/etc/ntp.conf"
+    NTP_SERVICE="ntp"
+else
+    # Default for ntpsec on Ubuntu 24.04
+    NTP_CONF_DEST="/etc/ntpsec/ntp.conf"
+    NTP_SERVICE="ntpsec"
+    mkdir -p /etc/ntpsec
 fi
 
-# Copy base config
-cp "$PROJECT_DIR/config/ntp.conf" "$NTP_CONF_DEST"
+echo -e "${YELLOW}[INFO] NTP config path: $NTP_CONF_DEST${NC}"
+echo -e "${YELLOW}[INFO] NTP service name: $NTP_SERVICE${NC}"
+
+# ─── Backup existing config ───
+if [ -f "$NTP_CONF_DEST" ]; then
+    cp "$NTP_CONF_DEST" "${NTP_CONF_DEST}.bak"
+    echo -e "${GREEN}[OK] Backed up $NTP_CONF_DEST to ${NTP_CONF_DEST}.bak${NC}"
+fi
+
+# ─── Build NTP config dynamically ───
+cat > "$NTP_CONF_DEST" <<NTPEOF
+# /etc/ntpsec/ntp.conf
+#
+# License By: Terabyte Plus
+# Use public NTP servers from the National Metrology Institute of Thailand
+#
+server time1.nimt.or.th iburst
+server time2.nimt.or.th iburst
+server time3.nimt.or.th iburst
+server time4.nimt.or.th iburst
+NTPEOF
 
 # Append extra NTP server if provided
 if [ -n "$EXTRA_NTP_SERVER" ]; then
-    sed -i "/server time4.nimt.or.th iburst/a server ${EXTRA_NTP_SERVER} iburst" "$NTP_CONF_DEST"
+    echo "server ${EXTRA_NTP_SERVER} iburst" >> "$NTP_CONF_DEST"
     echo -e "${GREEN}[OK] Added extra NTP server: $EXTRA_NTP_SERVER${NC}"
 fi
 
+# Append the rest of config
+cat >> "$NTP_CONF_DEST" <<NTPEOF
+
+# Drift file
+driftfile /var/lib/ntpsec/ntp.drift
+
+# Allow localhost
+restrict default kod nomodify nopeer noquery limited
+restrict 127.0.0.1
+restrict ::1
+NTPEOF
+
 # Add LAN restriction if provided
 if [ -n "$LAN_SUBNET" ]; then
-    sed -i "s|# restrict \[IP_ADDRESS\] mask 255.255.255.0 nomodify notrap|restrict ${LAN_SUBNET} mask ${LAN_MASK} nomodify notrap|" "$NTP_CONF_DEST"
+    echo "restrict ${LAN_SUBNET} mask ${LAN_MASK} nomodify notrap" >> "$NTP_CONF_DEST"
     echo -e "${GREEN}[OK] Added LAN restriction: $LAN_SUBNET/$LAN_MASK${NC}"
 fi
+
+# Append logging config
+cat >> "$NTP_CONF_DEST" <<NTPEOF
+
+# Logging
+logfile /var/log/ntp.log
+
+# Statistics
+statistics loopstats peerstats clockstats
+statsdir /var/log/ntpstats/
+
+# Enable filegen
+filegen loopstats file loopstats type day enable
+filegen peerstats file peerstats type day enable
+filegen clockstats file clockstats type day enable
+NTPEOF
 
 echo -e "${GREEN}[OK] NTP config written to: $NTP_CONF_DEST${NC}"
 echo ""
 
-# ─── Restart NTP ───
-systemctl restart ntp
-systemctl enable ntp
-echo -e "${GREEN}[OK] NTP service restarted and enabled${NC}"
+# ─── Create stats directory ───
+mkdir -p /var/log/ntpstats
+chown ntpsec:ntpsec /var/log/ntpstats 2>/dev/null || true
+
+# ─── Restart NTP service ───
+echo -e "${YELLOW}[INFO] Restarting NTP service ($NTP_SERVICE)...${NC}"
+systemctl restart "$NTP_SERVICE"
+systemctl enable "$NTP_SERVICE"
+echo -e "${GREEN}[OK] $NTP_SERVICE service restarted and enabled${NC}"
 echo ""
 
 # ─── Verify NTP sync ───
+echo -e "${YELLOW}[INFO] Checking NTP service status...${NC}"
+systemctl status "$NTP_SERVICE" --no-pager -l 2>/dev/null || true
+echo ""
+
 echo -e "${YELLOW}[INFO] Verifying NTP synchronization...${NC}"
-ntpq -p
+ntpq -p 2>/dev/null || echo -e "${YELLOW}[WARN] ntpq not ready yet, NTP may need a moment to sync${NC}"
 echo ""
 
 echo -e "${GREEN}========================================${NC}"

@@ -59,11 +59,11 @@ case "$SSL_CHOICE" in
         # ─── Self-Signed Certificate ───
         echo -e "${YELLOW}[INFO] Generating self-signed certificate...${NC}"
 
-        read -p "$(echo -e ${CYAN}Certificate validity in days [default: 365 or 3652 to 10 Year]:${NC} )" CERT_DAYS
-        CERT_DAYS="${CERT_DAYS:-365}"
+        read -p "$(echo -e ${CYAN}Certificate validity in days [default: 3650]:${NC} )" CERT_DAYS
+        CERT_DAYS="${CERT_DAYS:-3650}"
 
         read -p "$(echo -e ${CYAN}Organization name [default: Terabyte Plus]:${NC} )" CERT_ORG
-        CERT_ORG="${CERT_ORG:-Terabyte Plus}"
+        CERT_ORG="${CERT_ORG:-T.Cloud}"
 
         read -p "$(echo -e ${CYAN}Country code [default: TH]:${NC} )" CERT_COUNTRY
         CERT_COUNTRY="${CERT_COUNTRY:-TH}"
@@ -71,7 +71,7 @@ case "$SSL_CHOICE" in
         openssl req -x509 -nodes -days "$CERT_DAYS" -newkey rsa:2048 \
             -keyout "$SSL_PRIVATE_DIR/private_key.key" \
             -out "$SSL_DIR/server.crt" \
-            -subj "/C=${CERT_COUNTRY}/O=${CERT_ORG}/CN=${SERVER_NAME}"
+            -subj "/C=${CERT_COUNTRY}/O=${CERT_ORG}/OU=T.Cloud Gen3/CN=${SERVER_NAME}"
 
         CERT_FILE="$SSL_DIR/server.crt"
         KEY_FILE="$SSL_PRIVATE_DIR/private_key.key"
