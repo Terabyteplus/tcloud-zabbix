@@ -89,12 +89,6 @@ echo ""
 read -p "$(echo -e ${CYAN}Add additional NTP server IP? [enter to skip]:${NC} )" EXTRA_NTP_SERVER
 echo ""
 
-# ─── LAN Subnet Restriction ───
-read -p "$(echo -e ${CYAN}Enter LAN subnet to allow NTP access [e.g. 10.255.XXX.1] [enter to skip]:${NC} )" LAN_SUBNET
-read -p "$(echo -e ${CYAN}Enter subnet mask [default: 255.255.255.0]:${NC} )" LAN_MASK
-LAN_MASK="${LAN_MASK:-255.255.255.0}"
-echo ""
-
 # ─── Backup existing config ───
 NTP_CONF_DEST="/etc/ntp.conf"
 
@@ -133,12 +127,6 @@ restrict default kod nomodify nopeer noquery limited
 restrict 127.0.0.1
 restrict ::1
 NTPEOF
-
-# Add LAN restriction if provided
-if [ -n "$LAN_SUBNET" ]; then
-    echo "restrict ${LAN_SUBNET} mask ${LAN_MASK} nomodify notrap" >> "$NTP_CONF_DEST"
-    echo -e "${GREEN}[OK] Added LAN restriction: $LAN_SUBNET/$LAN_MASK${NC}"
-fi
 
 # Append logging config
 cat >> "$NTP_CONF_DEST" <<NTPEOF
