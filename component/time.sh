@@ -150,16 +150,25 @@ echo ""
 # ─── Create stats directory ───
 mkdir -p /var/log/ntpstats
 
+# ─── Detect NTP service name ───
+# On Ubuntu 24.04, 'ntp' is a transitional package that installs 'ntpsec'
+# The real service name is 'ntpsec', not 'ntp'
+if systemctl list-unit-files ntpsec.service &>/dev/null; then
+    NTP_SERVICE="ntpsec"
+else
+    NTP_SERVICE="ntp"
+fi
+
 # ─── Restart NTP service ───
-echo -e "${YELLOW}[INFO] Restarting NTP service...${NC}"
-systemctl restart ntp
-systemctl enable ntp
+echo -e "${YELLOW}[INFO] Restarting NTP service ($NTP_SERVICE)...${NC}"
+systemctl restart "$NTP_SERVICE"
+systemctl enable "$NTP_SERVICE" 2>/dev/null || true
 echo -e "${GREEN}[OK] NTP service restarted and enabled${NC}"
 echo ""
 
 # ─── Verify NTP sync ───
 echo -e "${YELLOW}[INFO] Checking NTP service status...${NC}"
-systemctl status ntp --no-pager -l 2>/dev/null || true
+systemctl status "$NTP_SERVICE" --no-pager -l 2>/dev/null || true
 echo ""
 
 echo -e "${YELLOW}[INFO] Verifying NTP synchronization...${NC}"
