@@ -32,12 +32,14 @@ echo "  1) Self-signed certificate"
 echo "  2) Custom certificate (provide your own .crt and .key files)"
 echo "  3) Let's Encrypt (certbot)"
 echo ""
-read -p "$(echo -e ${CYAN}Select option [default: 1]:${NC} )" SSL_CHOICE
+echo -ne "${CYAN}Select option [default: 1]: ${NC}"
+read SSL_CHOICE
 SSL_CHOICE="${SSL_CHOICE:-1}"
 echo ""
 
 # ─── Server Name ───
-read -p "$(echo -e ${CYAN}Enter server domain name [e.g. zabbix.example.com]:${NC} )" SERVER_NAME
+echo -ne "${CYAN}Enter server domain name [e.g. zabbix.example.com]: ${NC}"
+read SERVER_NAME
 if [ -z "$SERVER_NAME" ]; then
     echo -e "${RED}[ERROR] Server domain name is required${NC}"
     exit 1
@@ -59,13 +61,16 @@ case "$SSL_CHOICE" in
         # ─── Self-Signed Certificate ───
         echo -e "${YELLOW}[INFO] Generating self-signed certificate...${NC}"
 
-        read -p "$(echo -e ${CYAN}Certificate validity in days [default: 3650]:${NC} )" CERT_DAYS
+        echo -ne "${CYAN}Certificate validity in days [default: 3650]: ${NC}"
+        read CERT_DAYS
         CERT_DAYS="${CERT_DAYS:-3650}"
 
-        read -p "$(echo -e ${CYAN}Organization name [default: T.Cloud]:${NC} )" CERT_ORG
+        echo -ne "${CYAN}Organization name [default: T.Cloud]: ${NC}"
+        read CERT_ORG
         CERT_ORG="${CERT_ORG:-T.Cloud}"
 
-        read -p "$(echo -e ${CYAN}Country code [default: TH]:${NC} )" CERT_COUNTRY
+        echo -ne "${CYAN}Country code [default: TH]: ${NC}"
+        read CERT_COUNTRY
         CERT_COUNTRY="${CERT_COUNTRY:-TH}"
 
         # ─── IP Address for SAN ───
@@ -78,8 +83,8 @@ case "$SSL_CHOICE" in
         IP_INDEX=1
 
         while true; do
-            PROMPT="Enter IP address #${IP_INDEX} [enter to finish]: "
-            read -p "$PROMPT" CERT_IP
+            echo -ne "${CYAN}Enter IP address #${IP_INDEX} [enter to finish]: ${NC}"
+            read CERT_IP
             if [ -z "$CERT_IP" ]; then
                 break
             fi
@@ -109,8 +114,10 @@ case "$SSL_CHOICE" in
         # ─── Custom Certificate ───
         echo -e "${YELLOW}[INFO] Using custom certificate...${NC}"
 
-        read -p "$(echo -e ${CYAN}Enter path to certificate file (.crt):${NC} )" CERT_SRC
-        read -p "$(echo -e ${CYAN}Enter path to private key file (.key):${NC} )" KEY_SRC
+        echo -ne "${CYAN}Enter path to certificate file .crt: ${NC}"
+        read CERT_SRC
+        echo -ne "${CYAN}Enter path to private key file .key: ${NC}"
+        read KEY_SRC
 
         if [ ! -f "$CERT_SRC" ]; then
             echo -e "${RED}[ERROR] Certificate file not found: $CERT_SRC${NC}"
@@ -124,8 +131,8 @@ case "$SSL_CHOICE" in
         cp "$CERT_SRC" "$SSL_DIR/"
         cp "$KEY_SRC" "$SSL_PRIVATE_DIR/"
 
-        CERT_FILE="$SSL_DIR/$(basename $CERT_SRC)"
-        KEY_FILE="$SSL_PRIVATE_DIR/$(basename $KEY_SRC)"
+        CERT_FILE="$SSL_DIR/$(basename "$CERT_SRC")"
+        KEY_FILE="$SSL_PRIVATE_DIR/$(basename "$KEY_SRC")"
 
         echo -e "${GREEN}[OK] Certificate files copied${NC}"
         ;;
@@ -133,7 +140,8 @@ case "$SSL_CHOICE" in
         # ─── Let's Encrypt ───
         echo -e "${YELLOW}[INFO] Setting up Let's Encrypt...${NC}"
 
-        read -p "$(echo -e ${CYAN}Enter email for Let's Encrypt notifications:${NC} )" LE_EMAIL
+        echo -ne "${CYAN}Enter email for Let's Encrypt notifications: ${NC}"
+        read LE_EMAIL
         if [ -z "$LE_EMAIL" ]; then
             echo -e "${RED}[ERROR] Email is required for Let's Encrypt${NC}"
             exit 1
@@ -201,7 +209,8 @@ echo -e "${GREEN}[OK] Apache SSL VirtualHost configured${NC}"
 echo ""
 
 # ─── HTTP to HTTPS Redirect ───
-read -p "$(echo -e ${CYAN}Enable HTTP to HTTPS redirect? [Y/n]:${NC} )" ENABLE_REDIRECT
+echo -ne "${CYAN}Enable HTTP to HTTPS redirect? [Y/n]: ${NC}"
+read ENABLE_REDIRECT
 ENABLE_REDIRECT="${ENABLE_REDIRECT:-Y}"
 
 if [[ "$ENABLE_REDIRECT" =~ ^[Yy]$ ]]; then
