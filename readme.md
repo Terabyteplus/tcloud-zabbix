@@ -93,8 +93,6 @@ tcloud-zabbix/
 │   └── fix-apache.sh             # Fix Apache path for Zabbix 7.2+
 ├── config/
 │   └── ntp.conf                  # NTP config template (NIMT Thailand)
-├── docs/
-│   └── 01-1-Zabbix-*.docx        # Original reference guide
 └── readme.md
 ```
 
