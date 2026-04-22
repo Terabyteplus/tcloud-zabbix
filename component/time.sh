@@ -61,16 +61,16 @@ read -p "$(echo -e ${CYAN}Install NTP service? [Y/n]:${NC} )" INSTALL_NTP
 INSTALL_NTP="${INSTALL_NTP:-Y}"
 
 if [[ "$INSTALL_NTP" =~ ^[Yy]$ ]]; then
-    # Stop and disable systemd-timesyncd (conflicts with ntpsec/ntp)
+    # Stop and disable systemd-timesyncd (conflicts with ntp)
     echo -e "${YELLOW}[INFO] Disabling systemd-timesyncd (conflicts with NTP)...${NC}"
     systemctl stop systemd-timesyncd 2>/dev/null || true
     systemctl disable systemd-timesyncd 2>/dev/null || true
     apt remove -y systemd-timesyncd 2>/dev/null || true
     echo -e "${GREEN}[OK] systemd-timesyncd removed${NC}"
 
-    # Install ntpsec (replacement for ntp on Ubuntu 24.04)
-    apt install ntpsec ntpsec-ntpq -y
-    echo -e "${GREEN}[OK] NTPsec installed successfully${NC}"
+    # Install ntp
+    apt install ntp -y
+    echo -e "${GREEN}[OK] NTP installed successfully${NC}"
 else
     echo -e "${YELLOW}[SKIP] NTP installation skipped${NC}"
     exit 0
@@ -95,32 +95,17 @@ read -p "$(echo -e ${CYAN}Enter subnet mask [default: 255.255.255.0]:${NC} )" LA
 LAN_MASK="${LAN_MASK:-255.255.255.0}"
 echo ""
 
-# ─── Detect NTP config path ───
-if [ -d /etc/ntpsec ]; then
-    NTP_CONF_DEST="/etc/ntpsec/ntp.conf"
-    NTP_SERVICE="ntpsec"
-elif [ -f /etc/ntp.conf ]; then
-    NTP_CONF_DEST="/etc/ntp.conf"
-    NTP_SERVICE="ntp"
-else
-    # Default for ntpsec on Ubuntu 24.04
-    NTP_CONF_DEST="/etc/ntpsec/ntp.conf"
-    NTP_SERVICE="ntpsec"
-    mkdir -p /etc/ntpsec
-fi
-
-echo -e "${YELLOW}[INFO] NTP config path: $NTP_CONF_DEST${NC}"
-echo -e "${YELLOW}[INFO] NTP service name: $NTP_SERVICE${NC}"
-
 # ─── Backup existing config ───
+NTP_CONF_DEST="/etc/ntp.conf"
+
 if [ -f "$NTP_CONF_DEST" ]; then
     cp "$NTP_CONF_DEST" "${NTP_CONF_DEST}.bak"
     echo -e "${GREEN}[OK] Backed up $NTP_CONF_DEST to ${NTP_CONF_DEST}.bak${NC}"
 fi
 
-# ─── Build NTP config dynamically ───
+# ─── Build NTP config ───
 cat > "$NTP_CONF_DEST" <<NTPEOF
-# /etc/ntpsec/ntp.conf
+# /etc/ntp.conf
 #
 # License By: Terabyte Plus
 # Use public NTP servers from the National Metrology Institute of Thailand
@@ -141,9 +126,9 @@ fi
 cat >> "$NTP_CONF_DEST" <<NTPEOF
 
 # Drift file
-driftfile /var/lib/ntpsec/ntp.drift
+driftfile /var/lib/ntp/ntp.drift
 
-# Allow localhost
+# Restrictions
 restrict default kod nomodify nopeer noquery limited
 restrict 127.0.0.1
 restrict ::1
@@ -176,18 +161,17 @@ echo ""
 
 # ─── Create stats directory ───
 mkdir -p /var/log/ntpstats
-chown ntpsec:ntpsec /var/log/ntpstats 2>/dev/null || true
 
 # ─── Restart NTP service ───
-echo -e "${YELLOW}[INFO] Restarting NTP service ($NTP_SERVICE)...${NC}"
-systemctl restart "$NTP_SERVICE"
-systemctl enable "$NTP_SERVICE"
-echo -e "${GREEN}[OK] $NTP_SERVICE service restarted and enabled${NC}"
+echo -e "${YELLOW}[INFO] Restarting NTP service...${NC}"
+systemctl restart ntp
+systemctl enable ntp
+echo -e "${GREEN}[OK] NTP service restarted and enabled${NC}"
 echo ""
 
 # ─── Verify NTP sync ───
 echo -e "${YELLOW}[INFO] Checking NTP service status...${NC}"
-systemctl status "$NTP_SERVICE" --no-pager -l 2>/dev/null || true
+systemctl status ntp --no-pager -l 2>/dev/null || true
 echo ""
 
 echo -e "${YELLOW}[INFO] Verifying NTP synchronization...${NC}"

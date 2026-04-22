@@ -62,21 +62,47 @@ case "$SSL_CHOICE" in
         read -p "$(echo -e ${CYAN}Certificate validity in days [default: 3650]:${NC} )" CERT_DAYS
         CERT_DAYS="${CERT_DAYS:-3650}"
 
-        read -p "$(echo -e ${CYAN}Organization name [default: Terabyte Plus]:${NC} )" CERT_ORG
+        read -p "$(echo -e ${CYAN}Organization name [default: T.Cloud]:${NC} )" CERT_ORG
         CERT_ORG="${CERT_ORG:-T.Cloud}"
 
         read -p "$(echo -e ${CYAN}Country code [default: TH]:${NC} )" CERT_COUNTRY
         CERT_COUNTRY="${CERT_COUNTRY:-TH}"
 
+        # ─── IP Address for SAN ───
+        echo ""
+        echo -e "${CYAN}Enter IP addresses for the certificate (Subject Alternative Name)${NC}"
+        echo -e "${CYAN}This allows accessing Zabbix via IP address with HTTPS${NC}"
+        echo ""
+
+        SAN_ENTRIES="DNS:${SERVER_NAME}"
+        IP_INDEX=1
+
+        while true; do
+            read -p "$(echo -e ${CYAN}Enter IP address #${IP_INDEX} [enter to finish]:${NC} )" CERT_IP
+            if [ -z "$CERT_IP" ]; then
+                break
+            fi
+            SAN_ENTRIES="${SAN_ENTRIES},IP:${CERT_IP}"
+            echo -e "${GREEN}[OK] Added IP: $CERT_IP${NC}"
+            IP_INDEX=$((IP_INDEX + 1))
+        done
+
+        echo ""
+        echo -e "${YELLOW}[INFO] SAN entries: $SAN_ENTRIES${NC}"
+
+        # Generate certificate with SAN extension
         openssl req -x509 -nodes -days "$CERT_DAYS" -newkey rsa:2048 \
             -keyout "$SSL_PRIVATE_DIR/private_key.key" \
             -out "$SSL_DIR/server.crt" \
-            -subj "/C=${CERT_COUNTRY}/O=${CERT_ORG}/OU=T.Cloud Gen3/CN=${SERVER_NAME}"
+            -subj "/C=${CERT_COUNTRY}/O=${CERT_ORG}/OU=T.Cloud Gen3/CN=${SERVER_NAME}" \
+            -addext "subjectAltName=${SAN_ENTRIES}"
 
         CERT_FILE="$SSL_DIR/server.crt"
         KEY_FILE="$SSL_PRIVATE_DIR/private_key.key"
 
         echo -e "${GREEN}[OK] Self-signed certificate generated${NC}"
+        echo -e "${CYAN}[INFO] Certificate details:${NC}"
+        openssl x509 -in "$CERT_FILE" -noout -subject -ext subjectAltName 2>/dev/null || true
         ;;
     2)
         # ─── Custom Certificate ───
