@@ -19,7 +19,7 @@ NC='\033[0m'
 
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}   Zabbix 7.2+ Apache Path Fix${NC}"
-echo -e "${CYAN}   Terabyte Plus - tCloud${NC}"
+echo -e "${CYAN}   Terabyte Plus - TCloud${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 

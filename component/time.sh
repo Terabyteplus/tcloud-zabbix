@@ -19,7 +19,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}   NTP & Timezone Configuration${NC}"
-echo -e "${CYAN}   Terabyte Plus - tCloud${NC}"
+echo -e "${CYAN}   Terabyte Plus - TCloud${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
 

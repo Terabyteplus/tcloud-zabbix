@@ -52,7 +52,6 @@ sudo bash ./install.sh
   5)  Start/Manage Services
   6)  SSL/HTTPS Configuration
   7)  System Update (Security Patches)
-  8)  Fix Apache Path (Zabbix 7.2+)
   0)  Exit
 ```
 
@@ -73,9 +72,84 @@ sudo bash ./install.sh
 - **Custom Certificate** — ใช้ `.crt` / `.key` ที่มีอยู่แล้ว
 - **Let's Encrypt** — ใช้ Certbot ขอ Certificate ฟรี
 
-### Option 8 — Fix Apache Path (Zabbix 7.2+)
+### Fix SSL - Apache Path (Zabbix 7.2+)
 
-ตั้งแต่ Zabbix 7.2 เป็นต้นไป PHP frontend ย้ายจาก `/usr/share/zabbix` ไปเป็น `/usr/share/zabbix/ui` — สคริปต์นี้จะ fix path ให้อัตโนมัติ
+ตั้งแต่ Zabbix 7.2 เป็นต้นไป PHP frontend ย้ายจาก `/usr/share/zabbix` ไปเป็น `/usr/share/zabbix/ui` แก้เป็น 
+add /ui in DocumentRoot 
+
+แก้ที่ part แรก
+```bash
+ nano /etc/apache2/sites-available/000-default.conf
+```
+
+```xml
+<VirtualHost *:80>
+    DocumentRoot "/usr/share/zabbix"
+    ServerName t1099-zabbix.local
+    Redirect permanent / https://t1099-zabbix.local/
+</VirtualHost>
+```
+เปลื่ยนเป็น
+```xml 
+<VirtualHost *:80>
+    DocumentRoot "/usr/share/zabbix/ui"
+    ServerName t1099-zabbix.local
+    Redirect permanent / https://t1099-zabbix.local/
+</VirtualHost>
+```
+
+แก้ที่ part ที่สอง
+```bash
+nano /etc/apache2/sites-available/default-ssl.conf 
+```
+```xml
+<IfModule mod_ssl.c>
+    <VirtualHost _default_:443>
+        ServerAdmin webmaster@t1099-zabbix.local
+        ServerName t1099-zabbix.local
+        DocumentRoot /usr/share/zabbix/
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        SSLEngine on
+        SSLCertificateFile      /etc/httpd/ssl/server.crt
+        SSLCertificateKeyFile   /etc/httpd/ssl/private/private_key.key
+
+        <FilesMatch "\.(cgi|shtml|phtml|php)$">
+            SSLOptions +StdEnvVars
+        </FilesMatch>
+        <Directory /usr/lib/cgi-bin>
+            SSLOptions +StdEnvVars
+        </Directory>
+    </VirtualHost>
+</IfModule>
+```
+เปลื่ยนเป็น
+
+```xml
+<IfModule mod_ssl.c>
+    <VirtualHost _default_:443>
+        ServerAdmin webmaster@t1099-zabbix.local
+        ServerName t1099-zabbix.local
+        DocumentRoot /usr/share/zabbix/ui
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        SSLEngine on
+        SSLCertificateFile      /etc/httpd/ssl/server.crt
+        SSLCertificateKeyFile   /etc/httpd/ssl/private/private_key.key
+
+        <FilesMatch "\.(cgi|shtml|phtml|php)$">
+            SSLOptions +StdEnvVars
+        </FilesMatch>
+        <Directory /usr/lib/cgi-bin>
+            SSLOptions +StdEnvVars
+        </Directory>
+    </VirtualHost>
+</IfModule>
+```
 
 ---
 
@@ -90,7 +164,6 @@ tcloud-zabbix/
 │   ├── database.sh               # MySQL/PostgreSQL database setup
 │   ├── service.sh                # Start/stop/restart services
 │   ├── ssl.sh                    # SSL/HTTPS configuration
-│   └── fix-apache.sh             # Fix Apache path for Zabbix 7.2+
 ├── config/
 │   └── ntp.conf                  # NTP config template (NIMT Thailand)
 └── readme.md
@@ -145,81 +218,6 @@ Password: zabbix
 
 ---
 
-
-## FIX SSL
-add /ui in DocumentRoot 
-
-```bash
- nano /etc/apache2/sites-available/000-default.conf
-```
-
-```json
-<VirtualHost *:80>
-    DocumentRoot "/usr/share/zabbix"
-    ServerName t1099-zabbix.local
-    Redirect permanent / https://t1099-zabbix.local/
-</VirtualHost>
-```
-Change to 
-```json 
-<VirtualHost *:80>
-    DocumentRoot "/usr/share/zabbix/ui"
-    ServerName t1099-zabbix.local
-    Redirect permanent / https://t1099-zabbix.local/
-</VirtualHost>
-```
-
-```bash
-nano /etc/apache2/sites-available/default-ssl.conf 
-```
-```xml
-<IfModule mod_ssl.c>
-    <VirtualHost _default_:443>
-        ServerAdmin webmaster@t1099-zabbix.local
-        ServerName t1099-zabbix.local
-        DocumentRoot /usr/share/zabbix/
-
-        ErrorLog ${APACHE_LOG_DIR}/error.log
-        CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-        SSLEngine on
-        SSLCertificateFile      /etc/httpd/ssl/server.crt
-        SSLCertificateKeyFile   /etc/httpd/ssl/private/private_key.key
-
-        <FilesMatch "\.(cgi|shtml|phtml|php)$">
-            SSLOptions +StdEnvVars
-        </FilesMatch>
-        <Directory /usr/lib/cgi-bin>
-            SSLOptions +StdEnvVars
-        </Directory>
-    </VirtualHost>
-</IfModule>
-```
-Change to 
-
-```xml
-<IfModule mod_ssl.c>
-    <VirtualHost _default_:443>
-        ServerAdmin webmaster@t1099-zabbix.local
-        ServerName t1099-zabbix.local
-        DocumentRoot /usr/share/zabbix/ui
-
-        ErrorLog ${APACHE_LOG_DIR}/error.log
-        CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-        SSLEngine on
-        SSLCertificateFile      /etc/httpd/ssl/server.crt
-        SSLCertificateKeyFile   /etc/httpd/ssl/private/private_key.key
-
-        <FilesMatch "\.(cgi|shtml|phtml|php)$">
-            SSLOptions +StdEnvVars
-        </FilesMatch>
-        <Directory /usr/lib/cgi-bin>
-            SSLOptions +StdEnvVars
-        </Directory>
-    </VirtualHost>
-</IfModule>
-```
 
 ## 📄 License
 
