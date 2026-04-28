@@ -82,17 +82,10 @@ add /ui in DocumentRoot
  nano /etc/apache2/sites-available/000-default.conf
 ```
 
-```xml
+```diff
 <VirtualHost *:80>
-    DocumentRoot "/usr/share/zabbix"
-    ServerName t1099-zabbix.local
-    Redirect permanent / https://t1099-zabbix.local/
-</VirtualHost>
-```
-เปลื่ยนเป็น
-```xml 
-<VirtualHost *:80>
-    DocumentRoot "/usr/share/zabbix/ui"
+-    DocumentRoot "/usr/share/zabbix"
++    DocumentRoot "/usr/share/zabbix/ui"
     ServerName t1099-zabbix.local
     Redirect permanent / https://t1099-zabbix.local/
 </VirtualHost>
@@ -102,37 +95,14 @@ add /ui in DocumentRoot
 ```bash
 nano /etc/apache2/sites-available/default-ssl.conf 
 ```
-```xml
+
+```diff
 <IfModule mod_ssl.c>
     <VirtualHost _default_:443>
         ServerAdmin webmaster@t1099-zabbix.local
         ServerName t1099-zabbix.local
-        DocumentRoot /usr/share/zabbix/
-
-        ErrorLog ${APACHE_LOG_DIR}/error.log
-        CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-        SSLEngine on
-        SSLCertificateFile      /etc/httpd/ssl/server.crt
-        SSLCertificateKeyFile   /etc/httpd/ssl/private/private_key.key
-
-        <FilesMatch "\.(cgi|shtml|phtml|php)$">
-            SSLOptions +StdEnvVars
-        </FilesMatch>
-        <Directory /usr/lib/cgi-bin>
-            SSLOptions +StdEnvVars
-        </Directory>
-    </VirtualHost>
-</IfModule>
-```
-เปลื่ยนเป็น
-
-```xml
-<IfModule mod_ssl.c>
-    <VirtualHost _default_:443>
-        ServerAdmin webmaster@t1099-zabbix.local
-        ServerName t1099-zabbix.local
-        DocumentRoot /usr/share/zabbix/ui
+-        DocumentRoot /usr/share/zabbix/
++        DocumentRoot /usr/share/zabbix/ui
 
         ErrorLog ${APACHE_LOG_DIR}/error.log
         CustomLog ${APACHE_LOG_DIR}/access.log combined
